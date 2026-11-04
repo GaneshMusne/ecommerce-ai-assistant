@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
 
 WORKDIR /app
@@ -33,8 +34,7 @@ ENV PYTHONPATH="/app/apps/api/src"
 
 # Create non-root user and set permissions
 RUN addgroup --system app && \
-    adduser --system --ingroup app app && \
-    chown -R app:app /app
+    adduser --system --ingroup app app
 
 # Switch to non-root user
 USER app

@@ -136,7 +136,7 @@ The Streamlit backend address is configured separately through `API_URL`. Docker
 Evaluation requires a populated local Qdrant collection, a Google API key, a LangSmith API key, and the `rag-evaluation-dataset` dataset created in notebook 04.
 
 ```bash
-uv run --package api --env-file .env python apps/api/eval/eval_retriever.py
+uv run --package api --group eval --env-file .env python apps/api/eval/eval_retriever.py
 ```
 
 Each dataset example must include:
