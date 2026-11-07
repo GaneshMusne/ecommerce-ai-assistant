@@ -1,7 +1,15 @@
+import re
+
 import streamlit as st
 import requests
 from chatbot_ui.core.config import config
 
+
+st.set_page_config(
+    page_title="Ecommerce Assistant",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 def api_call(method, url, **kwargs):
 
@@ -39,11 +47,6 @@ def api_call(method, url, **kwargs):
         _show_error_popup(f"An unexpected error occurred: {str(e)}")
         return False, {"message": str(e)}
 
-with st.sidebar:
-    st.title("Shopping assistant")
-    st.caption("Answers use the available products retrieved by the RAG API.")
-
-
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Hello! How can I assist you today?"}]
 
@@ -52,6 +55,8 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+if "used_context" not in st.session_state:
+    st.session_state.used_context = []
 
 if prompt := st.chat_input("Hello! How can I assist you today?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -67,7 +72,31 @@ if prompt := st.chat_input("Hello! How can I assist you today?"):
         )
         if success:
             answer = response_data["message"]
-            st.write(answer)
+            used_context = response_data["used_context"]
+
+            st.session_state.used_context = used_context
             st.session_state.messages.append({"role": "assistant", "content": answer})
+
+            st.write(answer)
         else:
             st.error(response_data["message"])
+
+
+with st.sidebar:
+    suggestions_tab, = st.tabs(["🔍 Suggestions"])
+
+    with suggestions_tab:
+        if st.session_state.used_context:
+            for item in st.session_state.used_context:
+                st.caption(item.get("description", "No description"))
+                image_url = item.get("image_url")
+                if image_url:
+                    markdown_link = re.fullmatch(r"\[[^\]]+\]\((https?://[^)]+)\)", image_url)
+                    if markdown_link:
+                        image_url = markdown_link.group(1)
+                    st.image(image_url, width=250)
+                price = item.get("price")
+                st.caption(f"Price: {price} USD" if price is not None else "Price unavailable")
+                st.divider()
+        else:
+            st.info("No suggestions yet")
