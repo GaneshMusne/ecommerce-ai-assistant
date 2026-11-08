@@ -8,11 +8,11 @@ from google import genai
 from google.genai import types
 import numpy as np
 from qdrant_client import QdrantClient
-from qdrant_client.models import FieldCondition, Filter, MatchValue
+from qdrant_client.models import Document, FieldCondition, Filter, FusionQuery, MatchValue, Prefetch
 
 from api.agents.models import RAGGenerationResponse
 
-COLLECTION_NAME = "Amazon-items-minilm-l6-v2"
+COLLECTION_NAME = "Amazon-items-collection-01-hybrid-search"
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
@@ -52,10 +52,25 @@ def retrieve_data(query, qdrant_client, k=5):
     query_embedding = get_embedding(query)
 
     results = qdrant_client.query_points(
-        collection_name=COLLECTION_NAME,
-        query=query_embedding,
-        limit=k
-    )
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                Prefetch(
+                    query=query_embedding,
+                    using="sentence-transformers-all-MiniLM-L6-v2",
+                    limit=20
+                ),
+                Prefetch(
+                    query=Document(
+                        text=query,
+                        model="qdrant/bm25"
+                    ),
+                    using="bm25",
+                    limit=20
+                )
+            ],
+            query=FusionQuery(fusion="rrf"),
+            limit=k
+        )
 
     retrieved_context_ids = []
     retrieved_context = []
@@ -193,6 +208,7 @@ def rag_pipeline_wrapper(question, top_k=5):
             collection_name=COLLECTION_NAME,
             query=dummy_vector,
             limit=1,
+            using="sentence-transformers-all-MiniLM-L6-v2",
             with_payload=True,
             with_vectors=False,
             query_filter=Filter(
