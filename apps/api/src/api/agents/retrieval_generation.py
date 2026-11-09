@@ -1,6 +1,7 @@
 import os
 from functools import lru_cache
 from threading import Lock
+from api.agents.utils.prompt_management import prompt_template_registry
 import instructor
 from langsmith import traceable, get_current_run_tree
 
@@ -111,21 +112,10 @@ def process_context(context):
 )
 def build_prompt(preprocessed_context, question):
 
-    prompt = f"""
-You are a shopping assistant that can answer questions about the products in stock.
-
-You will be given a question and a list of context.
-
-Instructions:
-- Answer the question based on the provided context only.
-- Never use word context and refer to it as the available products.
-
-Context:
-{preprocessed_context}
-
-Question:
-{question}
-"""
+    prompt= prompt_template_registry("retrieval-generation").render(
+        preprocessed_context=preprocessed_context,
+        question=question
+    )
 
     return prompt
 
