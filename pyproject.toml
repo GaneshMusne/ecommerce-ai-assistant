@@ -38,6 +38,7 @@ explicit = true
 
 [dependency-groups]
 dev = [
+    "cohere>=7.3.1",
     "langchain-community<0.4.2",
     "langgraph>=1.2.14",
     "langsmith>=0.14.4",
